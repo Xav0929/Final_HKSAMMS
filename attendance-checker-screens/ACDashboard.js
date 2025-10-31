@@ -65,9 +65,9 @@ const ACDashboard = () => {
 
         const username = await AsyncStorage.getItem('username');
 
-        const dutiesUrl = `http://192.168.1.7:8000/api/duties?id=${encodeURIComponent(username)}`;
-        const attendanceUrl = `http://192.168.1.7:8000/api/attendance?studentId=${encodeURIComponent(username)}`;
-        const checkerAttendanceUrl = `http://192.168.1.7:8000/api/checkerAttendance?studentId=${encodeURIComponent(username)}`;
+        const dutiesUrl = ` https://final-hksamms.onrender.com/api/duties?id=${encodeURIComponent(username)}`;
+        const attendanceUrl = ` https://final-hksamms.onrender.com/api/attendance?studentId=${encodeURIComponent(username)}`;
+        const checkerAttendanceUrl = ` https://final-hksamms.onrender.com/api/checkerAttendance?studentId=${encodeURIComponent(username)}`;
 
         const [dutiesResponse, attendanceResponse, checkerAttendanceResponse] = await Promise.all([
           fetch(dutiesUrl),

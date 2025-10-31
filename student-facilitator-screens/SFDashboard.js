@@ -67,13 +67,13 @@ const SFDashboard = () => {
 
         const username = await AsyncStorage.getItem('username');
 
-        const dutiesUrl = `http://192.168.1.7:8000/api/duties?id=${encodeURIComponent(
+        const dutiesUrl = ` https://final-hksamms.onrender.com/api/duties?id=${encodeURIComponent(
           username
         )}`;
-        const attendanceUrl = `http://192.168.1.7:8000/api/attendance?studentId=${encodeURIComponent(
+        const attendanceUrl = ` https://final-hksamms.onrender.com/api/attendance?studentId=${encodeURIComponent(
           username
         )}`;
-        const checkerAttendanceUrl = `http://192.168.1.7:8000/api/faci-attendance?studentId=${encodeURIComponent(
+        const checkerAttendanceUrl = ` https://final-hksamms.onrender.com/api/faci-attendance?studentId=${encodeURIComponent(
           username
         )}`;
 

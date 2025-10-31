@@ -16,6 +16,8 @@ import {
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Location from "expo-location";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 /* ────────────────────── RESPONSIVE COLUMN WIDTHS ────────────────────── */
 const COLUMN_WIDTHS = {
@@ -91,26 +93,66 @@ export default function AttendancePhoto() {
 
   const toggleCameraFacing = () => setFacing((c) => (c === "back" ? "front" : "back"));
 
-  const capturePhoto = async () => {
-    if (!cameraRef.current) return;
-    try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.9 });
-      if (!photo?.uri) return;
-      const newRecord = {
-        id: Date.now().toString(),
-        uri: photo.uri,
-        time: new Date().toLocaleString(),
-        latitude: location ? location.latitude.toFixed(4) : "N/A",
-        longitude: location ? location.longitude.toFixed(4) : "N/A",
-        address: address || "N/A",
-        studentId: "12345",
-      };
-      setRecords((p) => [newRecord, ...p]);
-      setIsCameraOpen(false);
-    } catch (e) {
-      console.error(e);
+const capturePhoto = async () => {
+  if (!cameraRef.current) return;
+
+  try {
+    const photo = await cameraRef.current.takePictureAsync({ quality: 0.9 });
+    if (!photo?.uri) return;
+
+    const token = await AsyncStorage.getItem("token"); // your JWT token from login
+    if (!token) {
+      alert("You must be logged in to record attendance.");
+      return;
     }
-  };
+
+    const formData = new FormData();
+    formData.append("photo", {
+      uri: photo.uri,
+      type: "image/jpeg",
+      name: `self_${Date.now()}.jpg`,
+    });
+    formData.append("time", new Date().toLocaleString());
+    formData.append("latitude", location ? location.latitude.toString() : "");
+    formData.append("longitude", location ? location.longitude.toString() : "");
+    formData.append("address", address);
+
+    // 🔗 Replace with your actual backend URL (e.g. from Render or localhost)
+    const response = await fetch("http://192.168.1.7:8000/api/selfAttendance/add", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert("✅ Self Attendance recorded successfully!");
+      setRecords((prev) => [
+        {
+          id: Date.now().toString(),
+          uri: photo.uri,
+          time: new Date().toLocaleString(),
+          latitude: location ? location.latitude.toFixed(4) : "N/A",
+          longitude: location ? location.longitude.toFixed(4) : "N/A",
+          address: address || "N/A",
+          studentId: "12345",
+        },
+        ...prev,
+      ]);
+    } else {
+      alert(data.message || "Failed to record self attendance");
+    }
+
+    setIsCameraOpen(false);
+  } catch (e) {
+    console.error("❌ Error uploading photo:", e);
+    alert("Error saving attendance. Please try again.");
+  }
+};
+
 
   const filteredRecords = records.filter((r) => {
     const q = searchQuery.trim().toLowerCase();

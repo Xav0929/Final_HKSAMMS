@@ -10,7 +10,7 @@ import {
 import { CameraView, useCameraPermissions } from "expo-camera";
 import QRCheckIn from "./QRCheckIn"; // Ensure path is correct
 
-const API_URL = "http://192.168.1.7:8000/api/checkerAttendance";
+const API_URL = " https://final-hksamms.onrender.com/api/checkerAttendance";
 const PRIMARY_COLOR = "#00A4DF";
 const SCAN_COOLDOWN = 10000; // 10 seconds in milliseconds
 

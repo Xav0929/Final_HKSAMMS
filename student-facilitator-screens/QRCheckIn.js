@@ -13,7 +13,7 @@ import {
 const QRCheckIn = ({ scannedData }) => {
   const [records, setRecords] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const API_URL = "http://192.168.1.7:8000/api/faci-attendance";
+  const API_URL = " https://final-hksamms.onrender.com/api/faci-attendance";
 
   // Fetch attendance records from API on mount
   useEffect(() => {

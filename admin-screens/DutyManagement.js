@@ -41,7 +41,7 @@ export default function DutyManagement() {
   useEffect(() => {
     const fetchDuties = async () => {
       try {
-        const response = await axios.get("http://192.168.1.7:8000/api/duties");
+        const response = await axios.get(" https://final-hksamms.onrender.com/api/duties");
         setDuties(response.data);
       } catch (error) {
         console.error("Error fetching duties:", error);
@@ -54,7 +54,7 @@ export default function DutyManagement() {
   // ========================= VALIDATION & OVERLAP =========================
   const validateScholarAccount = async (scholarId) => {
     try {
-      const res = await axios.get(`http://192.168.1.7:8000/api/scholars/${scholarId}`);
+      const res = await axios.get(` https://final-hksamms.onrender.com/api/scholars/${scholarId}`);
       return res.data.exists === true;
     } catch { return false; }
   };
@@ -101,10 +101,10 @@ export default function DutyManagement() {
     try {
       if (isEditing) {
         const existing = duties.filter(d => d.id === duty.id);
-        await Promise.all(existing.map(d => d._id ? axios.delete(`http://192.168.1.7:8000/api/duties/${d._id}`) : null));
+        await Promise.all(existing.map(d => d._id ? axios.delete(` https://final-hksamms.onrender.com/api/duties/${d._id}`) : null));
       }
 
-      const res = await Promise.all(toSave.map(item => axios.post("http://192.168.1.7:8000/api/duties", item)));
+      const res = await Promise.all(toSave.map(item => axios.post(" https://final-hksamms.onrender.com/api/duties", item)));
       const saved = res.map(r => r.data);
 
       if (isEditing) {
@@ -129,7 +129,7 @@ export default function DutyManagement() {
   const fetchScholarDetails = async (id) => {
     setIsLoading(true);
     try {
-      const res = await axios.get(`http://192.168.1.7:8000/api/scholars/${id}`);
+      const res = await axios.get(`https://final-hksamms.onrender.com/api/scholars/${id}`);
       if (!res.data.exists) throw new Error("Scholar not found");
       const s = res.data.scholar;
       const duty = ["Student Facilitator", "Attendance Checker"].includes(s.duty) ? s.duty : "Student Facilitator";
@@ -267,7 +267,7 @@ export default function DutyManagement() {
               if (i === -1) return;
               const newStatus = duties[i].status === "Active" ? "Deactivated" : "Active";
               try {
-                await axios.patch(`http://192.168.1.7:8000/api/duties/${item._id}/status`, { status: newStatus });
+                await axios.patch(`https://final-hksamms.onrender.com/api/duties/${item._id}/status`, { status: newStatus });
                 setDuties(prev => {
                   const upd = [...prev];
                   upd[i].status = newStatus;
