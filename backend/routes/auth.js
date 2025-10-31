@@ -12,14 +12,13 @@ const { JWT_SECRET, EMAIL_USER, EMAIL_PASS } = process.env;
 
 // Nodemailer transporter
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
+  service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 });
+
 
 // ---------------- LOGIN ----------------
 router.post("/login", async (req, res) => {

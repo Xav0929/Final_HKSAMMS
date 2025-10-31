@@ -12,10 +12,11 @@ const { EMAIL_USER, EMAIL_PASS } = process.env;
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: EMAIL_USER,
-    pass: EMAIL_PASS,
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
+
 
 // Check transporter connection
 transporter.verify((error, success) => {
