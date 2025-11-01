@@ -6,8 +6,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  Alert,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -15,6 +15,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function StudentFaciHeader() {
   const [menuVisible, setMenuVisible] = useState(false);
+  const [confirmLogoutVisible, setConfirmLogoutVisible] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const navigation = useNavigation();
 
   const menuItems = [
@@ -26,31 +28,29 @@ export default function StudentFaciHeader() {
     { name: 'Logout', icon: 'log-out', screen: 'Logout' },
   ];
 
-  const handleMenuItemPress = async (screen) => {
+  const handleLogout = async () => {
+    setConfirmLogoutVisible(false);
+    setLoggingOut(true);
+
+    // simulate loading
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    await wait(2000);
+
+    await AsyncStorage.removeItem('token');
+    await AsyncStorage.removeItem('role');
+
+    setLoggingOut(false);
+
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  };
+
+  const handleMenuItemPress = (screen) => {
     setMenuVisible(false);
-
     if (screen === 'Logout') {
-      Alert.alert(
-        'Confirm Logout',
-        'Are you sure you want to log out?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Logout',
-            style: 'destructive',
-            onPress: async () => {
-              await AsyncStorage.removeItem('token');
-              await AsyncStorage.removeItem('role');
-
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' }],
-              });
-            },
-          },
-        ],
-        { cancelable: true }
-      );
+      setConfirmLogoutVisible(true);
     } else {
       navigation.navigate(screen);
     }
@@ -62,12 +62,8 @@ export default function StudentFaciHeader() {
         <Ionicons name="menu" size={24} color="white" />
       </TouchableOpacity>
 
-      <Modal
-        visible={menuVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setMenuVisible(false)}
-      >
+      {/* Menu Modal */}
+      <Modal visible={menuVisible} transparent animationType="fade">
         <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
@@ -76,10 +72,9 @@ export default function StudentFaciHeader() {
                   <Pressable
                     key={index}
                     onPress={() => handleMenuItemPress(item.screen)}
-                    style={({ pressed, hovered }) => [
+                    style={({ pressed }) => [
                       styles.menuItem,
-                      hovered && { backgroundColor: '#f3f4f6' }, // hover color (for web)
-                      pressed && { backgroundColor: '#e6f0ff' }, // pressed color (for mobile)
+                      pressed && { backgroundColor: '#e6f0ff' },
                       item.name === 'Logout' && { borderTopWidth: 1, borderTopColor: '#eee' },
                     ]}
                   >
@@ -103,6 +98,39 @@ export default function StudentFaciHeader() {
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Confirm Logout Modal */}
+      <Modal visible={confirmLogoutVisible} transparent animationType="fade">
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmContainer}>
+            <Text style={styles.confirmText}>Are you sure you want to log out?</Text>
+            <View style={styles.confirmButtons}>
+              <Pressable
+                style={[styles.confirmButton, { backgroundColor: '#ccc' }]}
+                onPress={() => setConfirmLogoutVisible(false)}
+              >
+                <Text>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.confirmButton, { backgroundColor: '#3b82f6' }]}
+                onPress={handleLogout}
+              >
+                <Text style={{ color: 'white' }}>Logout</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Logging Out Modal */}
+      <Modal visible={loggingOut} transparent animationType="fade">
+        <View style={styles.logoutOverlay}>
+          <View style={styles.logoutContainer}>
+            <ActivityIndicator size="large" color="#3b82f6" />
+            <Text style={styles.logoutText}>Logging out...</Text>
+          </View>
+        </View>
       </Modal>
     </>
   );
@@ -134,12 +162,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 6,
   },
-  menuIcon: {
-    marginRight: 15,
-    width: 24,
+  menuIcon: { marginRight: 15, width: 24 },
+  menuText: { fontSize: 16, color: '#333' },
+  logoutOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  menuText: {
+  logoutContainer: {
+    backgroundColor: 'white',
+    padding: 25,
+    borderRadius: 10,
+    alignItems: 'center',
+    width: 200,
+  },
+  logoutText: { marginTop: 10, fontSize: 16, color: '#333' },
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    width: 250,
+    alignItems: 'center',
+  },
+  confirmText: {
     fontSize: 16,
-    color: '#333',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  confirmButtons: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
+  confirmButton: {
+    flex: 1,
+    padding: 10,
+    marginHorizontal: 5,
+    borderRadius: 6,
+    alignItems: 'center',
   },
 });

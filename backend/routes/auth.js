@@ -3,21 +3,12 @@ const router = express.Router();
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
+const { sendEmail } = require("../utils/emailService"); 
 const dotenv = require("dotenv");
 
 dotenv.config();
 
-const { JWT_SECRET, EMAIL_USER, EMAIL_PASS } = process.env;
-
-// Nodemailer transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const { JWT_SECRET} = process.env;
 
 
 // ---------------- LOGIN ----------------
@@ -31,14 +22,14 @@ router.post("/login", async (req, res) => {
     if (!user) return res.status(401).json({ message: "User not found" });
 
     if (user.status && user.status.toLowerCase() === "inactive") {
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
+       await sendEmail({
         to: user.email,
-        subject: "Account Deactivated",
+        subject: "Account Deactivated - HK-SAMMS",
         text: `Hello ${user.username},\n\nYour account has been deactivated. Please contact admin for reactivation.`,
       });
       return res.status(403).json({ message: "Your account is deactivated. Check your email." });
     }
+
 
     const isMatch = await user.matchPassword(password);
     if (!isMatch) return res.status(401).json({ message: "Invalid password" });
@@ -59,6 +50,7 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+console.log(`📧 Email sent to ${email}`);
 
 // ---------------- SEND OTP ----------------
 router.post("/forgot-password", async (req, res) => {
@@ -72,11 +64,10 @@ router.post("/forgot-password", async (req, res) => {
     user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
     await user.save();
 
-    await transporter.sendMail({
-      from: EMAIL_USER,
+     await sendEmail({
       to: email,
-      subject: "Your OTP Code",
-      text: `Your OTP code is ${otp}. It expires in 5 minutes.`,
+      subject: "Your OTP Code - HK-SAMMS",
+      text: `Your OTP code is ${otp}. It expires in 10 minutes.`,
     });
 
     res.status(200).json({ message: "OTP sent to email" });
@@ -85,6 +76,7 @@ router.post("/forgot-password", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+console.log(`📧 Email sent to ${email}`);
 
 // ---------------- VERIFY OTP ----------------
 router.post("/verify-code", async (req, res) => {
@@ -139,13 +131,11 @@ router.post("/reset-password", async (req, res) => {
     console.log("✅ Password successfully updated for:", updatedUser.email);
 
     // Send confirmation email
-    await transporter.sendMail({
-      from: EMAIL_USER,
+    await sendEmail({
       to: email,
-      subject: "Password Reset Confirmation",
-      text: `Hello ${user.username},\n\nYour password has been successfully reset. If you did not initiate this change, please contact our support team immediately.\n\nBest regards,\nThe Support Team`,
+      subject: "Password Reset Confirmation - HK-SAMMS",
+      text: `Hello ${user.username},\n\nYour password has been successfully reset. If you did not initiate this change, please contact support immediately.\n\n— HK-SAMMS Team`,
     });
-    console.log("📧 Password reset confirmation email sent to:", email);
 
     res.status(200).json({ message: "Password reset successfully" });
   } catch (error) {
@@ -153,5 +143,6 @@ router.post("/reset-password", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+console.log(`📧 Email sent to ${email}`);
 
 module.exports = router;
