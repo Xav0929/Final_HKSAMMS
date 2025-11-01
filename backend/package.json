@@ -24,7 +24,8 @@
     "mongoose": "^7.8.7",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.10",
-    "react-native-dotenv": "^3.4.11"
+    "react-native-dotenv": "^3.4.11",
+    "resend": "^6.4.0"
   },
   "engines": {
     "node": "20.x"
