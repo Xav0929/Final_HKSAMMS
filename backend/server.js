@@ -14,6 +14,7 @@ const checkerAttendanceRoutes = require('./routes/checkerAttendance');
 const FaciAttendanceRoutes = require('./routes/FaciAttendance');
 const absentRoutes = require('./routes/absent');
 const selfAttendanceRoutes = require("./routes/selfAttendance");
+const path = require("path");
 
 
 const app = express();
@@ -42,6 +43,7 @@ app.use('/api/checkerAttendance', checkerAttendanceRoutes);
 app.use('/api/faci-attendance', FaciAttendanceRoutes);
 app.use('/api/absents', absentRoutes);
 app.use("/api/selfAttendance", selfAttendanceRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 
 app.listen(PORT, () => {

@@ -1,3 +1,4 @@
+// AttendancePhoto.jsx
 import React, { useEffect, useRef, useState } from "react";
 import {
   View,
@@ -18,8 +19,6 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-
-/* ────────────────────── RESPONSIVE COLUMN WIDTHS ────────────────────── */
 const COLUMN_WIDTHS = {
   photo: 130,
   time: 240,
@@ -45,7 +44,6 @@ export default function AttendancePhoto() {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  /* ────────────────────── PERMISSIONS & LOCATION ────────────────────── */
   useEffect(() => {
     (async () => {
       if (!permission) await requestPermission();
@@ -93,66 +91,69 @@ export default function AttendancePhoto() {
 
   const toggleCameraFacing = () => setFacing((c) => (c === "back" ? "front" : "back"));
 
-const capturePhoto = async () => {
-  if (!cameraRef.current) return;
+  // FIXED UPLOAD FUNCTION
+  const capturePhoto = async () => {
+    if (!cameraRef.current) return;
 
-  try {
-    const photo = await cameraRef.current.takePictureAsync({ quality: 0.9 });
-    if (!photo?.uri) return;
+    try {
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.7,
+        base64: false,
+        exif: false,
+      });
 
-    const token = await AsyncStorage.getItem("token"); // your JWT token from login
-    if (!token) {
-      alert("You must be logged in to record attendance.");
-      return;
-    }
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        alert("You must be logged in.");
+        return;
+      }
 
-    const formData = new FormData();
-    formData.append("photo", {
-      uri: photo.uri,
-      type: "image/jpeg",
-      name: `self_${Date.now()}.jpg`,
-    });
-    formData.append("time", new Date().toLocaleString());
-    formData.append("latitude", location ? location.latitude.toString() : "");
-    formData.append("longitude", location ? location.longitude.toString() : "");
-    formData.append("address", address);
+      const formData = new FormData();
 
-    // 🔗 Replace with your actual backend URL (e.g. from Render or localhost)
-    const response = await fetch("http://192.168.1.7:8000/api/selfAttendance/add", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
+      // CRITICAL: ORDER = uri → type → name
+      formData.append("photo", {
+        uri: photo.uri,
+        type: "image/jpeg",
+        name: `selfie_${Date.now()}.jpg`,
+      });
 
-    const data = await response.json();
+      formData.append("time", new Date().toLocaleString());
+      formData.append("latitude", location?.latitude?.toString() || "");
+      formData.append("longitude", location?.longitude?.toString() || "");
+      formData.append("address", address || "");
 
-    if (response.ok) {
-      alert("✅ Self Attendance recorded successfully!");
-      setRecords((prev) => [
-        {
+      const response = await fetch("http://192.168.86.39:8000/api/selfAttendance/add", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Self Attendance recorded successfully!");
+        const newRec = {
           id: Date.now().toString(),
           uri: photo.uri,
           time: new Date().toLocaleString(),
-          latitude: location ? location.latitude.toFixed(4) : "N/A",
-          longitude: location ? location.longitude.toFixed(4) : "N/A",
+          latitude: location?.latitude?.toFixed(4) || "N/A",
+          longitude: location?.longitude?.toFixed(4) || "N/A",
           address: address || "N/A",
           studentId: "12345",
-        },
-        ...prev,
-      ]);
-    } else {
-      alert(data.message || "Failed to record self attendance");
+        };
+        setRecords((prev) => [newRec, ...prev]);
+      } else {
+        alert(data.message || "Failed to record attendance");
+      }
+    } catch (e) {
+      console.error("Upload error:", e);
+      alert("Error saving attendance.");
+    } finally {
+      setIsCameraOpen(false);
     }
-
-    setIsCameraOpen(false);
-  } catch (e) {
-    console.error("❌ Error uploading photo:", e);
-    alert("Error saving attendance. Please try again.");
-  }
-};
-
+  };
 
   const filteredRecords = records.filter((r) => {
     const q = searchQuery.trim().toLowerCase();
@@ -165,10 +166,8 @@ const capturePhoto = async () => {
     );
   });
 
-  /* ────────────────────── UI ────────────────────── */
   return (
     <SafeAreaView style={styles.container}>
-      {/* ── Header (search + camera button) ── */}
       <View style={styles.headerRow}>
         <TextInput
           style={styles.searchInput}
@@ -181,14 +180,9 @@ const capturePhoto = async () => {
         </TouchableOpacity>
       </View>
 
-      {/* ── MAIN CONTENT (fills everything under the header) ── */}
       <View style={styles.contentContainer}>
         {isMobile ? (
-          /* ── MOBILE: CARDS ── */
-          <ScrollView
-            contentContainerStyle={styles.mobileScrollContent}
-            showsVerticalScrollIndicator={false}
-          >
+          <ScrollView contentContainerStyle={styles.mobileScrollContent} showsVerticalScrollIndicator={false}>
             {filteredRecords.length === 0 ? (
               <Text style={styles.emptyText}>No records found.</Text>
             ) : (
@@ -237,14 +231,8 @@ const capturePhoto = async () => {
             )}
           </ScrollView>
         ) : (
-          /* ── WEB: FULL‑HEIGHT TABLE ── */
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={isWeb}
-            style={styles.webHorizontalScroll}   // <-- flex: 1
-          >
+          <ScrollView horizontal showsHorizontalScrollIndicator={isWeb} style={styles.webHorizontalScroll}>
             <View style={styles.table}>
-              {/* Sticky Header */}
               <View style={styles.tableHeader}>
                 <View style={[styles.th, { width: COLUMN_WIDTHS.photo }]}>
                   <Text style={styles.thText}>Photo</Text>
@@ -263,7 +251,6 @@ const capturePhoto = async () => {
                 </View>
               </View>
 
-              {/* Body – fills the remaining height */}
               <ScrollView style={styles.webBodyScroll}>
                 {filteredRecords.length === 0 ? (
                   <View style={styles.emptyRow}>
@@ -319,7 +306,6 @@ const capturePhoto = async () => {
         )}
       </View>
 
-      {/* ── Camera Modal ── */}
       <Modal visible={isCameraOpen} animationType="slide">
         <View style={styles.modalContainer}>
           <CameraView ref={cameraRef} style={styles.camera} facing={facing} />
@@ -340,7 +326,6 @@ const capturePhoto = async () => {
         </View>
       </Modal>
 
-      {/* ── Image Viewer Modal ── */}
       <Modal visible={isImageViewOpen} transparent animationType="fade">
         <View style={styles.imageViewContainer}>
           <TouchableOpacity style={styles.closeImageBtn} onPress={() => setIsImageViewOpen(false)}>
@@ -364,14 +349,9 @@ const capturePhoto = async () => {
   );
 }
 
-/* ────────────────────── STYLES ────────────────────── */
+// STYLES — UNCHANGED
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f9f9fb",
-  },
-
-  /* ── Header ── */
+  container: { flex: 1, backgroundColor: "#f9f9fb" },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -398,23 +378,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
   },
-  smallCameraText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-
-  /* ── CONTENT THAT FILLS THE REMAINING SPACE ── */
-  contentContainer: {
-    flex: 1,               // <-- forces it to take the rest of the screen
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
-
-  /* ── MOBILE CARDS ── */
-  mobileScrollContent: {
-    paddingBottom: 20,
-  },
+  smallCameraText: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  contentContainer: { flex: 1, paddingHorizontal: 16, paddingTop: 12 },
+  mobileScrollContent: { paddingBottom: 20 },
   card: {
     backgroundColor: "#fff",
     borderRadius: 12,
@@ -429,29 +395,10 @@ const styles = StyleSheet.create({
   cardImageWrapper: { width: "100%" },
   cardImage: { width: "100%", height: 180 },
   cardBody: { padding: 16 },
-  cardField: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  cardLabel: {
-    fontSize: 13,
-    color: "#666",
-    fontWeight: "600",
-    minWidth: 80,
-  },
-  cardValue: {
-    fontSize: 13,
-    color: "#333",
-    flex: 1,
-    textAlign: "right",
-    marginLeft: 12,
-  },
-
-  /* ── WEB TABLE ── */
-  webHorizontalScroll: {
-    flex: 1,               // <-- makes the horizontal ScrollView fill height
-  },
+  cardField: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },
+  cardLabel: { fontSize: 13, color: "#666", fontWeight: "600", minWidth: 80 },
+  cardValue: { fontSize: 13, color: "#333", flex: 1, textAlign: "right", marginLeft: 12 },
+  webHorizontalScroll: { flex: 1 },
   table: {
     minWidth: 960,
     backgroundColor: "#fff",
@@ -472,55 +419,16 @@ const styles = StyleSheet.create({
     top: 0,
     zIndex: 10,
   },
-  th: {
-    paddingVertical: 18,
-    paddingHorizontal: 18,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  thText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#333",
-    textAlign: "center",
-  },
-  tr: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    minHeight: 84,
-  },
-  td: {
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  tdText: {
-    fontSize: 13.5,
-    color: "#444",
-    textAlign: "center",
-    lineHeight: 18,
-  },
-  tableImage: {
-    width: 72,
-    height: 72,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-
-  /* ── WEB BODY SCROLL (fills remaining height) ── */
-  webBodyScroll: {
-    flex: 1,               // <-- makes the vertical body scroll fill the rest
-  },
-
-  /* ── SHARED ── */
+  th: { paddingVertical: 18, paddingHorizontal: 18, justifyContent: "center", alignItems: "center" },
+  thText: { fontSize: 14, fontWeight: "bold", color: "#333", textAlign: "center" },
+  tr: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#eee", minHeight: 84 },
+  td: { paddingHorizontal: 18, paddingVertical: 14, justifyContent: "center", alignItems: "center" },
+  tdText: { fontSize: 13.5, color: "#444", textAlign: "center", lineHeight: 18 },
+  tableImage: { width: 72, height: 72, borderRadius: 10, borderWidth: 1, borderColor: "#ddd" },
+  webBodyScroll: { flex: 1 },
   linkText: { color: "#1a73e8", textDecorationLine: "underline" },
   emptyText: { textAlign: "center", marginTop: 40, fontSize: 16, color: "#888" },
   emptyRow: { paddingVertical: 40, alignItems: "center" },
-
-  /* ── CAMERA & IMAGE VIEWER ── */
   modalContainer: { flex: 1, backgroundColor: "#000" },
   camera: { flex: 1 },
   controls: {
@@ -532,19 +440,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 16,
   },
-  captureBtn: {
-    backgroundColor: "#4CAF50",
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 30,
-  },
+  captureBtn: { backgroundColor: "#4CAF50", paddingVertical: 16, paddingHorizontal: 32, borderRadius: 30 },
   captureText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  flipBtn: {
-    backgroundColor: "#2196F3",
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 30,
-  },
+  flipBtn: { backgroundColor: "#2196F3", paddingVertical: 16, paddingHorizontal: 24, borderRadius: 30 },
   flipText: { color: "#fff", fontSize: 16, fontWeight: "600" },
   imageViewContainer: {
     flex: 1,
@@ -583,7 +481,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
-  center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-  message: { textAlign: "center", fontSize: 16, marginBottom: 16, color: "#555" },
+  center: { 
+    flex: 1, 
+    justifyContent: "center",
+     alignItems: "center", 
+     padding: 20 },
+  message: { 
+    textAlign: "center", 
+    fontSize: 16, 
+    marginBottom: 16, 
+    color: "#555" },
+  button: {
+     backgroundColor: "#1a73e8", 
+     paddingHorizontal: 20, 
+     paddingVertical: 10, 
+     borderRadius: 8 },
+  buttonText: {
+     color: "#fff", 
+     fontWeight: "600" },
 });
