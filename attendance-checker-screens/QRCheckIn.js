@@ -10,7 +10,7 @@ import {
 const QRCheckIn = ({ scannedData }) => {
   const [records, setRecords] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const API_URL = " https://final-hksamms.onrender.com/api/checkerAttendance";
+  const API_URL = "https://final-hksamms.onrender.com/api/checkerAttendance";
 
   // Fetch attendance records from API on mount
   useEffect(() => {

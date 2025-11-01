@@ -39,8 +39,8 @@ const ROOMS = [
   "408", "409",
 ];
 
-const API_URL = " https://final-hksamms.onrender.com/api/attendance";
-const DUTIES_API_URL = " https://final-hksamms.onrender.com/api/duties";
+const API_URL = "https://final-hksamms.onrender.com/api/attendance";
+const DUTIES_API_URL = "https://final-hksamms.onrender.com/api/duties";
 
 const AttendanceEncoding = () => {
   const [studentName, setStudentName] = useState("");

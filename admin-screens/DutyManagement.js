@@ -41,7 +41,7 @@ export default function DutyManagement() {
   useEffect(() => {
     const fetchDuties = async () => {
       try {
-        const response = await axios.get(" https://final-hksamms.onrender.com/api/duties");
+        const response = await axios.get("https://final-hksamms.onrender.com/api/duties");
         setDuties(response.data);
       } catch (error) {
         console.error("Error fetching duties:", error);
@@ -54,7 +54,7 @@ export default function DutyManagement() {
   // ========================= VALIDATION & OVERLAP =========================
   const validateScholarAccount = async (scholarId) => {
     try {
-      const res = await axios.get(` https://final-hksamms.onrender.com/api/scholars/${scholarId}`);
+      const res = await axios.get(`https://final-hksamms.onrender.com/api/scholars/${scholarId}`);
       return res.data.exists === true;
     } catch { return false; }
   };
@@ -101,10 +101,10 @@ export default function DutyManagement() {
     try {
       if (isEditing) {
         const existing = duties.filter(d => d.id === duty.id);
-        await Promise.all(existing.map(d => d._id ? axios.delete(` https://final-hksamms.onrender.com/api/duties/${d._id}`) : null));
+        await Promise.all(existing.map(d => d._id ? axios.delete(`https://final-hksamms.onrender.com/api/duties/${d._id}`) : null));
       }
 
-      const res = await Promise.all(toSave.map(item => axios.post(" https://final-hksamms.onrender.com/api/duties", item)));
+      const res = await Promise.all(toSave.map(item => axios.post("https://final-hksamms.onrender.com/api/duties", item)));
       const saved = res.map(r => r.data);
 
       if (isEditing) {

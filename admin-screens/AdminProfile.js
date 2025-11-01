@@ -51,7 +51,7 @@ export default function AdminProfile() {
       return;
     }
 
-    const response = await axios.get(" https://final-hksamms.onrender.com/api/users/profile", {
+    const response = await axios.get("https://final-hksamms.onrender.com/api/users/profile", {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",

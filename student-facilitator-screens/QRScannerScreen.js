@@ -10,7 +10,7 @@ import {
 import { CameraView, useCameraPermissions } from "expo-camera";
 import QRCheckIn from "./QRCheckIn"; // Ensure path is correct
 
-const API_URL = " https://final-hksamms.onrender.com/api/faci-attendance";
+const API_URL = "https://final-hksamms.onrender.com/api/faci-attendance";
 const PRIMARY_COLOR = "#00A4DF";
 const SCAN_COOLDOWN = 10000; // 10 seconds in milliseconds
 const DEBOUNCE_DELAY = 500; // 500ms debounce to handle iOS rapid triggers

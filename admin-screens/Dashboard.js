@@ -352,7 +352,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchScholarsAndGrowth = async () => {
       try {
-        const response = await fetch(' https://final-hksamms.onrender.com/api/scholars');
+        const response = await fetch('https://final-hksamms.onrender.com/api/scholars');
         if (!response.ok) throw new Error('Failed to fetch');
         const data = await response.json();
 
@@ -404,9 +404,9 @@ const Dashboard = () => {
     const fetchTodayAbsences = async () => {
       try {
         const [dutiesRes, attendanceRes, scholarsRes] = await Promise.all([
-          fetch(' https://final-hksamms.onrender.com/api/duties'),
-          fetch(' https://final-hksamms.onrender.com/api/faci-attendance'),
-          fetch(' https://final-hksamms.onrender.com/api/scholars'),
+          fetch('https://final-hksamms.onrender.com/api/duties'),
+          fetch('https://final-hksamms.onrender.com/api/faci-attendance'),
+          fetch('https://final-hksamms.onrender.com/api/scholars'),
         ]);
 
         if (!dutiesRes.ok || !attendanceRes.ok || !scholarsRes.ok) {
@@ -476,9 +476,9 @@ const Dashboard = () => {
     const fetchWeeklyAverage = async () => {
       try {
         const [dutiesRes, attendanceRes, scholarsRes] = await Promise.all([
-          fetch(' https://final-hksamms.onrender.com/api/duties'),
-          fetch(' https://final-hksamms.onrender.com/api/faci-attendance'),
-          fetch(' https://final-hksamms.onrender.com/api/scholars'),
+          fetch('https://final-hksamms.onrender.com/api/duties'),
+          fetch('https://final-hksamms.onrender.com/api/faci-attendance'),
+          fetch('https://final-hksamms.onrender.com/api/scholars'),
         ]);
 
         if (!dutiesRes.ok || !attendanceRes.ok || !scholarsRes.ok) {
@@ -518,8 +518,8 @@ const Dashboard = () => {
     const fetchThisWeekCheckins = async () => {
       try {
         const [faciRes, checkerRes] = await Promise.all([
-          fetch(' https://final-hksamms.onrender.com/api/faci-attendance'),
-          fetch(' https://final-hksamms.onrender.com/api/checkerAttendance'),
+          fetch('https://final-hksamms.onrender.com/api/faci-attendance'),
+          fetch('https://final-hksamms.onrender.com/api/checkerAttendance'),
         ]);
 
         if (!faciRes.ok || !checkerRes.ok) {

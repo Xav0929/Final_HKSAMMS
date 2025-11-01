@@ -122,7 +122,7 @@ export default function AttendancePhoto() {
       formData.append("longitude", location?.longitude?.toString() || "");
       formData.append("address", address || "");
 
-      const response = await fetch("http://192.168.86.39:8000/api/selfAttendance/add", {
+      const response = await fetch("https://final-hksamms.onrender.com/api/selfAttendance/add", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
