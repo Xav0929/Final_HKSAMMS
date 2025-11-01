@@ -137,7 +137,7 @@ const LoginFormContent = ({ navigation }) => {
 
     try {
       
-      const response = await fetch("https://final-hksamms.onrender.comapi/auth/forgot-password", {
+      const response = await fetch("https://final-hksamms.onrender.com/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.toLowerCase() }),

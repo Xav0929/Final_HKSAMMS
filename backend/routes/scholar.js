@@ -6,18 +6,18 @@ const bcrypt = require('bcryptjs');
 const { sendEmail } = require('../utils/emailService');
 require('dotenv').config();
 
-// ✅ Get all scholars
+// Get all scholars
 router.get('/', async (req, res) => {
   try {
     const scholars = await Scholar.find().sort({ createdAt: -1 });
     res.json(scholars);
   } catch (err) {
-    console.error('❌ Error fetching scholars:', err);
+    console.error('Error fetching scholars:', err);
     res.status(500).json({ message: 'Failed to fetch scholars', error: err.message });
   }
 });
 
-// ✅ Add new scholar + auto-create user + send welcome email
+// Add new scholar + auto-create user + send welcome email
 router.post('/', async (req, res) => {
   const { name, id, email, year, course, duty, password, role } = req.body;
 
@@ -53,6 +53,14 @@ router.post('/', async (req, res) => {
       status: 'Active',
     });
 
+    // EMAIL LOGGING
+    console.log('EMAIL SENT: Account Created');
+    console.log(`To: ${email}`);
+    console.log(`Name: ${name}`);
+    console.log(`Username: ${id}`);
+    console.log(`Role: ${userRole}`);
+    console.log('---');
+
     await sendEmail({
       to: email,
       subject: 'Account Created - HK-SAMMS',
@@ -61,12 +69,12 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({ message: 'Scholar and user created successfully', scholar: newScholar });
   } catch (err) {
-    console.error('❌ Error creating scholar:', err);
+    console.error('Error creating scholar:', err);
     res.status(500).json({ message: 'Failed to create scholar or user', error: err.message });
   }
 });
 
-// ✅ Update scholar + user + send change notification
+// Update scholar + user + send change notification
 router.put('/:id', async (req, res) => {
   try {
     const scholar = await Scholar.findById(req.params.id);
@@ -96,6 +104,13 @@ router.put('/:id', async (req, res) => {
       await user.save();
 
       if (changes.length > 0) {
+        // EMAIL LOGGING
+        console.log('EMAIL SENT: Account Updated');
+        console.log(`To: ${user.email}`);
+        console.log(`Username: ${user.username}`);
+        console.log(`Changes: ${changes.join(' | ')}`);
+        console.log('---');
+
         await sendEmail({
           to: user.email,
           subject: 'Account Updated - HK-SAMMS',
@@ -108,12 +123,12 @@ router.put('/:id', async (req, res) => {
 
     res.json({ message: 'Scholar and linked user updated successfully', scholar });
   } catch (err) {
-    console.error('❌ Error updating scholar:', err);
+    console.error('Error updating scholar:', err);
     res.status(500).json({ message: 'Failed to update scholar', error: err.message });
   }
 });
 
-// ✅ Toggle scholar/user status + send email
+// Toggle scholar/user status + send email
 router.patch('/:id/status', async (req, res) => {
   try {
     const scholar = await Scholar.findById(req.params.id);
@@ -129,37 +144,44 @@ router.patch('/:id/status', async (req, res) => {
       user.status = newStatus;
       await user.save();
 
-      const subject =
-        newStatus === 'Inactive'
-          ? 'Account Deactivated - HK-SAMMS'
-          : 'Account Reactivated - HK-SAMMS';
-      const text =
-        newStatus === 'Inactive'
-          ? `Hello ${user.username},\n\nYour account has been deactivated by the admin. You will not be able to log in until it is reactivated.\n\n— HK-SAMMS Team`
-          : `Hello ${user.username},\n\nGood news! Your account has been reactivated by the admin. You may now log in again.\n\nWelcome back!\n\n— HK-SAMMS Team`;
+      const action = newStatus === 'Inactive' ? 'Deactivated' : 'Reactivated';
+      const subject = `Account ${action} - HK-SAMMS`;
 
-      await sendEmail({ to: user.email, subject, text });
+      // EMAIL LOGGING
+      console.log(`EMAIL SENT: Account ${action}`);
+      console.log(`To: ${user.email}`);
+      console.log(`Username: ${user.username}`);
+      console.log(`Status: ${previousStatus} to ${newStatus}`);
+      console.log('---');
+
+      await sendEmail({
+        to: user.email,
+        subject,
+        text: newStatus === 'Inactive'
+          ? `Hello ${user.username},\n\nYour account has been deactivated by the admin. You will not be able to log in until it is reactivated.\n\n— HK-SAMMS Team`
+          : `Hello ${user.username},\n\nGood news! Your account has been reactivated by the admin. You may now log in again.\n\nWelcome back!\n\n— HK-SAMMS Team`,
+      });
     }
 
     res.json({ message: 'Status updated successfully', scholar });
   } catch (err) {
-    console.error('❌ Error updating scholar status:', err);
+    console.error('Error updating scholar status:', err);
     res.status(500).json({ message: 'Failed to update status', error: err.message });
   }
 });
 
-// ✅ Get single scholar by ID field (not Mongo _id)
+// Get single scholar by ID field (not Mongo _id)
 router.get('/:id', async (req, res) => {
   try {
     const scholar = await Scholar.findOne({ id: req.params.id });
     res.json({ exists: !!scholar, scholar });
   } catch (err) {
-    console.error('❌ Error fetching scholar:', err);
+    console.error('Error fetching scholar:', err);
     res.status(500).json({ message: 'Failed to fetch scholar', error: err.message });
   }
 });
 
-// ✅ Count scholars created in specific month
+// Count scholars created in specific month
 router.get('/count-by-month', async (req, res) => {
   try {
     const { year, month } = req.query;
