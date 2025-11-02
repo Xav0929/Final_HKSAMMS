@@ -23,19 +23,11 @@ async function sendEmail({ to, subject, text, html }) {
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      // ADD TIMEOUT: 10 seconds max
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
+      const response = await resend.emails.send(payload);
 
-      const response = await resend.emails.send(payload, { signal: controller.signal });
-      clearTimeout(timeout);
-
-      // VALIDATE RESPONSE
-      if (!response || typeof response !== 'object') {
-        throw new Error('Resend returned invalid response');
-      }
-      if (!response.id) {
-        throw new Error(`Resend returned no ID: ${JSON.stringify(response)}`);
+      // SUCCESS: Resend returns { id: 're_...' }
+      if (!response?.id) {
+        throw new Error('Resend returned no ID');
       }
 
       console.log('EMAIL SENT');
@@ -50,24 +42,24 @@ async function sendEmail({ to, subject, text, html }) {
       console.log('---');
 
       return response;
-
     } catch (err) {
       lastError = err;
-      const isTimeout = err.name === 'AbortError';
-      const status = isTimeout ? 'timeout' : (err?.statusCode || 'unknown');
-      const message = err.message || 'no message';
+      const status = err?.statusCode || err?.response?.status || 'unknown';
+      const message = err?.message || 'no message';
 
-      console.error(`EMAIL ATTEMPT ${attempt} FAILED (${status}): ${message}`);
+      console.error(`EMAIL ATTEMPT ${attempt} FAILED (status ${status}): ${message}`);
+
       if (attempt < maxRetries) {
-        const delay = 1000 * attempt;
-        console.log(`Retrying in ${delay}ms...`);
-        await new Promise(r => setTimeout(r, delay));
+        console.log(`Retrying in ${1000 * attempt}ms...`);
+        await new Promise(r => setTimeout(r, 1000 * attempt));
       }
     }
   }
 
+  // ALL FAILED
   console.error('ALL EMAIL ATTEMPTS FAILED');
-  throw lastError;
+  console.error('Final error:', lastError?.message || lastError);
+  throw lastError; // This will go to route → 500 error
 }
 
 module.exports = { sendEmail };
