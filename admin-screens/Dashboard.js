@@ -453,8 +453,8 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const [scholarsRes, attendanceRes] = await Promise.all([
-        fetch('http://192.168.86.39:8000/api/scholars'),
-        fetch(`http://192.168.86.39:8000/api/attendance?month=10&year=2025`),
+        fetch(' https://final-hksamms.onrender.com/api/scholars'),
+        fetch(` https://final-hksamms.onrender.com/api/attendance?month=10&year=2025`),
       ]);
 
       const scholars = await scholarsRes.json();
@@ -607,9 +607,9 @@ const Dashboard = () => {
     const fetchTodayAbsences = async () => {
       try {
         const [dutiesRes, attendanceRes, scholarsRes] = await Promise.all([
-          fetch('http://192.168.86.39:8000/api/duties'),
-          fetch('http://192.168.86.39:8000/api/faci-attendance'),
-          fetch('http://192.168.86.39:8000/api/scholars'),
+          fetch(' https://final-hksamms.onrender.com/api/duties'),
+          fetch(' https://final-hksamms.onrender.com/api/faci-attendance'),
+          fetch(' https://final-hksamms.onrender.com/api/scholars'),
         ]);
 
         if (!dutiesRes.ok || !attendanceRes.ok || !scholarsRes.ok) throw new Error('Failed to fetch data');
@@ -674,9 +674,9 @@ const Dashboard = () => {
     const fetchWeeklyAverage = async () => {
       try {
         const [dutiesRes, attendanceRes, scholarsRes] = await Promise.all([
-          fetch('http://192.168.86.39:8000/api/duties'),
-          fetch('http://192.168.86.39:8000/api/faci-attendance'),
-          fetch('http://192.168.86.39:8000/api/scholars'),
+          fetch(' https://final-hksamms.onrender.com/api/duties'),
+          fetch(' https://final-hksamms.onrender.com/api/faci-attendance'),
+          fetch(' https://final-hksamms.onrender.com/api/scholars'),
         ]);
 
         if (!dutiesRes.ok || !attendanceRes.ok || !scholarsRes.ok) throw new Error('Failed to fetch data');
@@ -767,7 +767,7 @@ const Dashboard = () => {
       // Try fetching from attendance API first for better filtering
       let attendanceData = [];
       try {
-        const attendanceRes = await fetch(`http://192.168.86.39:8000/api/attendance?month=${monthNumber}&year=${year}`);
+        const attendanceRes = await fetch(` https://final-hksamms.onrender.com/api/attendance?month=${monthNumber}&year=${year}`);
         if (attendanceRes.ok) {
           attendanceData = await attendanceRes.json();
         }
@@ -777,8 +777,8 @@ const Dashboard = () => {
 
       // Also fetch from faci and checker endpoints
       const [faciRes, checkerRes] = await Promise.all([
-        fetch('http://192.168.86.39:8000/api/faci-attendance'),
-        fetch('http://192.168.86.39:8000/api/checkerAttendance'),
+        fetch(' https://final-hksamms.onrender.com/api/faci-attendance'),
+        fetch(' https://final-hksamms.onrender.com/api/checkerAttendance'),
       ]);
 
       const faciAttendances = faciRes.ok ? await faciRes.json() : [];
@@ -915,7 +915,7 @@ const Dashboard = () => {
       try {
         const monthIndex = MONTHS_FULL.indexOf(selectedMonth);
         const monthNumber = monthIndex + 1;
-        const res = await fetch(`http://192.168.86.39:8000/api/attendance?month=${monthNumber}&year=${selectedYear}`);
+        const res = await fetch(` https://final-hksamms.onrender.com/api/attendance?month=${monthNumber}&year=${selectedYear}`);
         const records = await res.json();
 
         const daily = weekDayOrder.map(day => ({ day, present: 0, absent: 0, total: 0 }));

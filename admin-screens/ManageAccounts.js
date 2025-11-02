@@ -42,7 +42,7 @@ export default function ManageAccounts() {
 
   const fetchScholars = async () => {
     try {
-      const response = await fetch("http://192.168.86.39:8000/api/scholars");
+      const response = await fetch(" https://final-hksamms.onrender.com/api/scholars");
       const data = await response.json();
       setScholars(data);
     } catch (err) {
@@ -57,7 +57,7 @@ export default function ManageAccounts() {
     try {
       if (isEditing && editIndex !== null) {
         await fetch(
-          `http://192.168.86.39:8000/api/scholars/${scholars[editIndex]._id}`,
+          ` https://final-hksamms.onrender.com/api/scholars/${scholars[editIndex]._id}`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -65,7 +65,7 @@ export default function ManageAccounts() {
           }
         );
       } else {
-        await fetch("http://192.168.86.39:8000/api/scholars", {
+        await fetch(" https://final-hksamms.onrender.com/api/scholars", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
@@ -102,7 +102,7 @@ export default function ManageAccounts() {
 
     try {
       const response = await fetch(
-        `http://192.168.86.39:8000/api/scholars/${scholarId}/status`,
+        ` https://final-hksamms.onrender.com/api/scholars/${scholarId}/status`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
