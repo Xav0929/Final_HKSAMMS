@@ -23,9 +23,13 @@ async function sendEmail({ to, subject, text, html }) {
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const data = await resend.emails.send(payload);
+      const response = await resend.emails.send(payload);
 
-      // SUCCESS
+      // SUCCESS: Resend returns { id: 're_...' }
+      if (!response?.id) {
+        throw new Error('Resend returned no ID');
+      }
+
       console.log('EMAIL SENT');
       console.log(`To: ${to}`);
       console.log(`Subject: ${subject}`);
@@ -33,17 +37,18 @@ async function sendEmail({ to, subject, text, html }) {
         const otp = text.match(/OTP code is (\d+)/)?.[1];
         if (otp) console.log(`OTP: ${otp}`);
       }
-      console.log(`Resend ID: ${data.id}`);
-      console.log(`Preview: https://resend.com/emails/${data.id}`);
+      console.log(`Resend ID: ${response.id}`);
+      console.log(`Preview: https://resend.com/emails/${response.id}`);
       console.log('---');
 
-      return data; // Return real data
+      return response;
     } catch (err) {
       lastError = err;
-      const status = err?.statusCode || 'unknown';
+      const status = err?.statusCode || err?.response?.status || 'unknown';
       const message = err?.message || 'no message';
 
       console.error(`EMAIL ATTEMPT ${attempt} FAILED (status ${status}): ${message}`);
+
       if (attempt < maxRetries) {
         console.log(`Retrying in ${1000 * attempt}ms...`);
         await new Promise(r => setTimeout(r, 1000 * attempt));
@@ -51,9 +56,10 @@ async function sendEmail({ to, subject, text, html }) {
     }
   }
 
-  // ALL ATTEMPTS FAILED
+  // ALL FAILED
   console.error('ALL EMAIL ATTEMPTS FAILED');
-  throw lastError;
+  console.error('Final error:', lastError?.message || lastError);
+  throw lastError; // This will go to route → 500 error
 }
 
 module.exports = { sendEmail };
