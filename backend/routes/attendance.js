@@ -53,10 +53,27 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET: Fetch all attendance records
+// GET: Fetch all attendance records (with optional month/year filtering)
 router.get('/', async (req, res) => {
   try {
-    const records = await Attendance.find();
+    const { month, year } = req.query;
+    let query = {};
+
+    // Filter by month and year if provided
+    if (month && year) {
+      const monthNum = parseInt(month);
+      const yearNum = parseInt(year);
+      const startDate = moment(`${yearNum}-${monthNum}-01`, 'YYYY-M-D').startOf('month');
+      const endDate = moment(startDate).endOf('month');
+
+      // Filter by encodedTime string (format: YYYY-MM-DD HH:mm:ss)
+      query.encodedTime = {
+        $regex: `^${yearNum}-${String(monthNum).padStart(2, '0')}`,
+        $options: 'i'
+      };
+    }
+
+    const records = await Attendance.find(query).sort({ encodedTime: -1 });
     res.status(200).json(records);
   } catch (error) {
     console.error('Error fetching records:', error.message);

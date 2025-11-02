@@ -1,11 +1,15 @@
-// models/Absent.js
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const absentSchema = new mongoose.Schema({
-  studentId: { type: String, required: true },   // same as username
-  date:      { type: Date,   required: true },   // date of the absent duty
-  dutyId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Duty' },
-  createdAt: { type: Date,   default: Date.now },
+  studentId: { type: String, required: true },
+  date: { type: Date, required: true },
+  room: { type: String, required: true },
+  time: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+}, {
+  collection: 'absents'  // ← FORCE NAME
 });
 
-module.exports = mongoose.model('Absent', absentSchema);
+absentSchema.index({ studentId: 1, date: 1, room: 1, time: 1 }, { unique: true });
+
+module.exports = mongoose.model("Absent", absentSchema);

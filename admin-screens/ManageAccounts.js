@@ -13,23 +13,9 @@ import ScholarViewModal from "../components/ScholarViewModal";
 import ScholarTable from "../components/ScholarTable";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import { YEARS, COURSES } from "../constants/scholarMeta";
 
 const PRIMARY_COLOR = "#00A4DF";
-const YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
-const COURSES = [
-  "BS ACCOUNTANCY",
-  "BS HOSPITALITY MANAGEMENT",
-  "BS TOURISM MANAGEMENT",
-  "BSBA- MARKETING MANAGEMENT",
-  "BSBA- BANKING & MICROFINANCE",
-  "BACHELOR OF ELEMENTARY EDUCATION",
-  "BSED- ENGLISH",
-  "BSED- FILIPINO",
-  "BS CRIMINOLOGY",
-  "BS CIVIL ENGINEERING",
-  "BS INFORMATION TECHNOLOGY",
-  "BS NURSING",
-];
 const DUTY_TYPES = ["Student Facilitator", "Attendance Checker"];
 
 const PAGE_SIZE = 10; // rows per page
@@ -56,7 +42,7 @@ export default function ManageAccounts() {
 
   const fetchScholars = async () => {
     try {
-      const response = await fetch("https://final-hksamms.onrender.com/api/scholars");
+      const response = await fetch("http://192.168.86.39:8000/api/scholars");
       const data = await response.json();
       setScholars(data);
     } catch (err) {
@@ -71,7 +57,7 @@ export default function ManageAccounts() {
     try {
       if (isEditing && editIndex !== null) {
         await fetch(
-          `https://final-hksamms.onrender.com/api/scholars/${scholars[editIndex]._id}`,
+          `http://192.168.86.39:8000/api/scholars/${scholars[editIndex]._id}`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -79,7 +65,7 @@ export default function ManageAccounts() {
           }
         );
       } else {
-        await fetch("https://final-hksamms.onrender.com/api/scholars", {
+        await fetch("http://192.168.86.39:8000/api/scholars", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
@@ -116,7 +102,7 @@ export default function ManageAccounts() {
 
     try {
       const response = await fetch(
-        `https://final-hksamms.onrender.com/api/scholars/${scholarId}/status`,
+        `http://192.168.86.39:8000/api/scholars/${scholarId}/status`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

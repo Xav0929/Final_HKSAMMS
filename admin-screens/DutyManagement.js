@@ -41,7 +41,7 @@ export default function DutyManagement() {
   useEffect(() => {
     const fetchDuties = async () => {
       try {
-        const response = await axios.get("https://final-hksamms.onrender.com/api/duties");
+        const response = await axios.get("http://192.168.86.39:8000/api/duties");
         setDuties(response.data);
       } catch (error) {
         console.error("Error fetching duties:", error);
@@ -54,7 +54,7 @@ export default function DutyManagement() {
   // ========================= VALIDATION & OVERLAP =========================
   const validateScholarAccount = async (scholarId) => {
     try {
-      const res = await axios.get(`https://final-hksamms.onrender.com/api/scholars/${scholarId}`);
+      const res = await axios.get(`http://192.168.86.39:8000/api/scholars/${scholarId}`);
       return res.data.exists === true;
     } catch { return false; }
   };
@@ -101,10 +101,10 @@ export default function DutyManagement() {
     try {
       if (isEditing) {
         const existing = duties.filter(d => d.id === duty.id);
-        await Promise.all(existing.map(d => d._id ? axios.delete(`https://final-hksamms.onrender.com/api/duties/${d._id}`) : null));
+        await Promise.all(existing.map(d => d._id ? axios.delete(`http://192.168.86.39:8000/api/duties/${d._id}`) : null));
       }
 
-      const res = await Promise.all(toSave.map(item => axios.post("https://final-hksamms.onrender.com/api/duties", item)));
+      const res = await Promise.all(toSave.map(item => axios.post("http://192.168.86.39:8000/api/duties", item)));
       const saved = res.map(r => r.data);
 
       if (isEditing) {
@@ -129,7 +129,7 @@ export default function DutyManagement() {
   const fetchScholarDetails = async (id) => {
     setIsLoading(true);
     try {
-      const res = await axios.get(`https://final-hksamms.onrender.com/api/scholars/${id}`);
+      const res = await axios.get(`http://192.168.86.39:8000/api/scholars/${id}`);
       if (!res.data.exists) throw new Error("Scholar not found");
       const s = res.data.scholar;
       const duty = ["Student Facilitator", "Attendance Checker"].includes(s.duty) ? s.duty : "Student Facilitator";
@@ -267,7 +267,7 @@ export default function DutyManagement() {
               if (i === -1) return;
               const newStatus = duties[i].status === "Active" ? "Deactivated" : "Active";
               try {
-                await axios.patch(`https://final-hksamms.onrender.com/api/duties/${item._id}/status`, { status: newStatus });
+                await axios.patch(`http://192.168.86.39:8000/api/duties/${item._id}/status`, { status: newStatus });
                 setDuties(prev => {
                   const upd = [...prev];
                   upd[i].status = newStatus;
@@ -377,14 +377,7 @@ const DutyTableRow = ({ duty, onEdit, onView, onToggleStatus }) => (
 
     {/* ========== ACTION BUTTONS (Colored & Visible) ========== */}
     <View style={[styles.td, { flex: 2, flexDirection: "row", justifyContent: "space-around", alignItems: "center" }]}>
-      <TouchableOpacity
-        style={styles.viewBtn}
-        onPress={onView}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.btnText}>View</Text>
-      </TouchableOpacity>
-
+     
       <TouchableOpacity
         style={styles.editBtn}
         onPress={onEdit}
@@ -393,20 +386,7 @@ const DutyTableRow = ({ duty, onEdit, onView, onToggleStatus }) => (
         <Text style={styles.btnText}>Edit</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[
-          styles.statusBtn,
-          {
-            backgroundColor: duty.status === "Active" ? "#dc3545" : "#28a745",
-          },
-        ]}
-        onPress={onToggleStatus}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.btnText}>
-          {duty.status === "Active" ? "Deactivate" : "Activate"}
-        </Text>
-      </TouchableOpacity>
+     
     </View>
   </View>
 );
@@ -417,7 +397,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   title: { fontSize: 20, fontWeight: "bold", marginTop: 30 },
   createBtn: { backgroundColor: PRIMARY_COLOR, paddingVertical: 10, paddingHorizontal: 15, borderRadius: 6, marginTop: 30 },
-  btnText: { color: "white", fontWeight: "600" },
+  btnText: { color: "white", fontWeight: "600" , textAlign: "center" },
   search: { borderWidth: 1, borderColor: "#ccc", borderRadius: 6, padding: 8 },
   sectionTitle: { fontSize: 18, fontWeight: "600", marginVertical: 8 },
 

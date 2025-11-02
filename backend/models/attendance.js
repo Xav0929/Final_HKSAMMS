@@ -10,6 +10,8 @@ const attendanceSchema = new mongoose.Schema({
   classStatus: { type: String },
   facilitatorStatus: { type: String },
   encodedTime: { type: String, required: true },
+  checkerId: { type: String },
+  checkerName: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 

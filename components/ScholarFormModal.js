@@ -218,24 +218,36 @@ const ScholarFormModal = ({
               />
 
               {/* Duty Type Dropdown */}
-              <Text style={styles.label}>Duty Type</Text>
+              <Text style={styles.label}>
+                Duty Type {isEditing && <Text style={styles.disabledLabelText}>(Cannot be changed)</Text>}
+              </Text>
               <Dropdown
                 style={[
                   styles.dropdown,
                   isFocus.duty && { borderColor: "#0078d7" },
+                  isEditing && styles.dropdownDisabled,
                 ]}
-                placeholderStyle={styles.placeholderStyle}
-                selectedTextStyle={styles.selectedTextStyle}
+                placeholderStyle={[
+                  styles.placeholderStyle,
+                  isEditing && styles.placeholderDisabled,
+                ]}
+                selectedTextStyle={[
+                  styles.selectedTextStyle,
+                  isEditing && styles.selectedTextDisabled,
+                ]}
                 data={DUTY_TYPES.map((d) => ({ label: d, value: d }))}
                 labelField="label"
                 valueField="value"
                 placeholder="Select Duty Type"
                 value={dutyType}
-                onFocus={() => setIsFocus({ ...isFocus, duty: true })}
+                disable={isEditing}
+                onFocus={() => !isEditing && setIsFocus({ ...isFocus, duty: true })}
                 onBlur={() => setIsFocus({ ...isFocus, duty: false })}
                 onChange={(item) => {
-                  setDutyType(item.value);
-                  setIsFocus({ ...isFocus, duty: false });
+                  if (!isEditing) {
+                    setDutyType(item.value);
+                    setIsFocus({ ...isFocus, duty: false });
+                  }
                 }}
               />
 
@@ -281,11 +293,17 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1 },
   title: { fontSize: 18, fontWeight: "700", marginBottom: 15 },
   label: { fontWeight: "600", marginBottom: 5, fontSize: 14 },
+  disabledLabelText: { fontSize: 12, fontWeight: "400", color: "#999", fontStyle: "italic" },
   input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 6, padding: 10, marginBottom: 8 },
   passwordInputContainer: { flexDirection: "row", alignItems: "center", position: "relative" },
   passwordInput: { flex: 1 },
   errorText: { color: "red", fontSize: 12, marginBottom: 8 },
   dropdown: { height: 40, borderColor: "#ccc", borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, marginBottom: 12 },
+  dropdownDisabled: { backgroundColor: "#f5f5f5", borderColor: "#d3d3d3", opacity: 0.6 },
+  placeholderStyle: { fontSize: 14, color: "#888" },
+  placeholderDisabled: { color: "#999" },
+  selectedTextStyle: { fontSize: 14, color: "#000" },
+  selectedTextDisabled: { color: "#666" },
   row: { flexDirection: "row", justifyContent: "space-between", marginTop: 15 },
   saveBtn: { backgroundColor: "green", padding: 12, borderRadius: 6, flex: 1, marginRight: 5 },
   cancelBtn: { backgroundColor: "red", padding: 12, borderRadius: 6, flex: 1, marginLeft: 5 },

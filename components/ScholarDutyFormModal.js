@@ -229,16 +229,21 @@ const ScholarDutyFormModal = ({
             <ScrollView contentContainerStyle={styles.scrollContent}>
               <Text style={styles.title}>Assign Scholar Duty</Text>
 
-              <Text style={styles.label}>Student Name</Text>
+              <Text style={styles.label}>
+                Student Name {isEditing && <Text style={styles.disabledLabelText}>(Cannot be changed)</Text>}
+              </Text>
               <TextInput
                 placeholder="Enter Student Name"
                 placeholderTextColor="#888"
                 value={studentName}
                 onChangeText={setStudentName}
-                style={styles.input}
+                editable={!isEditing}
+                style={[styles.input, isEditing && styles.inputDisabled]}
               />
 
-              <Text style={styles.label}>Student ID</Text>
+              <Text style={styles.label}>
+                Student ID {isEditing && <Text style={styles.disabledLabelText}>(Cannot be changed)</Text>}
+              </Text>
               <TextInput
                 placeholder="00-0000-000000"
                 placeholderTextColor="#888"
@@ -246,54 +251,64 @@ const ScholarDutyFormModal = ({
                 keyboardType="numeric"
                 onChangeText={handleIdChange}
                 maxLength={14}
-                style={styles.input}
+                editable={!isEditing}
+                style={[styles.input, isEditing && styles.inputDisabled]}
               />
 
-              <Text style={styles.label}>Year</Text>
+              <Text style={styles.label}>
+                Year {isEditing && <Text style={styles.disabledLabelText}>(Cannot be changed)</Text>}
+              </Text>
               <Dropdown
-                style={styles.dropdown}
-                placeholderStyle={styles.placeholderStyle}
-                selectedTextStyle={styles.selectedTextStyle}
+                style={[styles.dropdown, isEditing && styles.dropdownDisabled]}
+                placeholderStyle={[styles.placeholderStyle, isEditing && styles.placeholderDisabled]}
+                selectedTextStyle={[styles.selectedTextStyle, isEditing && styles.selectedTextDisabled]}
                 data={toDropdownData(YEARS)}
                 labelField="label"
                 valueField="value"
                 placeholder="Select Year"
                 value={year}
-                onChange={(item) => setYear(item.value)}
+                disable={isEditing}
+                onChange={(item) => !isEditing && setYear(item.value)}
                 renderLeftIcon={() => (
-                  <AntDesign name="calendar" size={16} color="#555" style={styles.icon} />
+                  <AntDesign name="calendar" size={16} color={isEditing ? "#999" : "#555"} style={styles.icon} />
                 )}
               />
 
-              <Text style={styles.label}>Course</Text>
+              <Text style={styles.label}>
+                Course {isEditing && <Text style={styles.disabledLabelText}>(Cannot be changed)</Text>}
+              </Text>
               <Dropdown
-                style={styles.dropdown}
-                placeholderStyle={styles.placeholderStyle}
-                selectedTextStyle={styles.selectedTextStyle}
+                style={[styles.dropdown, isEditing && styles.dropdownDisabled]}
+                placeholderStyle={[styles.placeholderStyle, isEditing && styles.placeholderDisabled]}
+                selectedTextStyle={[styles.selectedTextStyle, isEditing && styles.selectedTextDisabled]}
                 data={toDropdownData(COURSES)}
                 labelField="label"
                 valueField="value"
                 placeholder="Select Course"
                 value={course}
-                onChange={(item) => setCourse(item.value)}
+                disable={isEditing}
+                onChange={(item) => !isEditing && setCourse(item.value)}
                 renderLeftIcon={() => (
-                  <AntDesign name="book" size={16} color="#555" style={styles.icon} />
+                  <AntDesign name="book" size={16} color={isEditing ? "#999" : "#555"} style={styles.icon} />
                 )}
               />
 
-              <Text style={styles.label}>Duty Type</Text>
+              <Text style={styles.label}>
+                Duty Type {isEditing && <Text style={styles.disabledLabelText}>(Cannot be changed)</Text>}
+              </Text>
               <Dropdown
-                style={styles.dropdown}
-                placeholderStyle={styles.placeholderStyle}
-                selectedTextStyle={styles.selectedTextStyle}
+                style={[styles.dropdown, isEditing && styles.dropdownDisabled]}
+                placeholderStyle={[styles.placeholderStyle, isEditing && styles.placeholderDisabled]}
+                selectedTextStyle={[styles.selectedTextStyle, isEditing && styles.selectedTextDisabled]}
                 data={toDropdownData(DUTY_TYPES)}
                 labelField="label"
                 valueField="value"
                 placeholder="Select Duty Type"
                 value={dutyType}
-                onChange={handleDutyTypeChange}
+                disable={isEditing}
+                onChange={(item) => !isEditing && handleDutyTypeChange(item)}
                 renderLeftIcon={() => (
-                  <AntDesign name="idcard" size={16} color="#555" style={styles.icon} />
+                  <AntDesign name="idcard" size={16} color={isEditing ? "#999" : "#555"} style={styles.icon} />
                 )}
               />
 
@@ -427,6 +442,8 @@ const styles = StyleSheet.create({
     maxHeight: "90%",
   },
   title: { fontSize: 18, fontWeight: "700", marginBottom: 20, textAlign: "center" },
+  label: { fontWeight: "600", marginBottom: 5, fontSize: 13 },
+  disabledLabelText: { fontSize: 11, fontWeight: "400", color: "#999", fontStyle: "italic" },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -435,7 +452,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontSize: 13,
   },
-  label: { fontWeight: "600", marginBottom: 5, fontSize: 13 },
+  inputDisabled: {
+    backgroundColor: "#f5f5f5",
+    borderColor: "#d3d3d3",
+    opacity: 0.6,
+    color: "#666",
+  },
   dropdown: {
     height: 38,
     borderColor: "#ccc",
@@ -445,8 +467,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: "#f9f9f9",
   },
+  dropdownDisabled: {
+    backgroundColor: "#f5f5f5",
+    borderColor: "#d3d3d3",
+    opacity: 0.6,
+  },
   placeholderStyle: { fontSize: 13, color: "#999" },
+  placeholderDisabled: { color: "#999" },
   selectedTextStyle: { fontSize: 13, color: "#000" },
+  selectedTextDisabled: { color: "#666" },
   icon: { marginRight: 6 },
   sectionTitle: { fontSize: 15, fontWeight: "700", marginVertical: 10 },
   scheduleCard: {

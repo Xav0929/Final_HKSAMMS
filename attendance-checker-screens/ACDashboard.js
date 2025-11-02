@@ -1,15 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import moment from 'moment';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
+import { StackedBarChart, LineChart } from 'react-native-chart-kit';
+
+const API_BASE_URL = 'https://final-hksamms.onrender.com';
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const ACDashboard = () => {
   const [stats, setStats] = useState([]);
   const [schedule, setSchedule] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dailySummary, setDailySummary] = useState([]);
+  const [weeklyTrend, setWeeklyTrend] = useState([]);
+
+  const chartConfig = {
+    backgroundGradientFrom: '#ffffff',
+    backgroundGradientTo: '#ffffff',
+    decimalPlaces: 0,
+    color: (opacity = 1) => `rgba(17, 24, 39, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(71, 85, 105, ${opacity})`,
+    propsForDots: {
+      r: '4',
+      strokeWidth: '2',
+      stroke: '#1D4ED8',
+    },
+  };
+
+  const chartWidth = Math.min(SCREEN_WIDTH - 48, 700);
 
   // Helper functions
   const parseDutyTime = (timeStr, date) => {
@@ -65,9 +86,9 @@ const ACDashboard = () => {
 
         const username = await AsyncStorage.getItem('username');
 
-        const dutiesUrl = `https://final-hksamms.onrender.com/api/duties?id=${encodeURIComponent(username)}`;
-        const attendanceUrl = `https://final-hksamms.onrender.com/api/attendance?studentId=${encodeURIComponent(username)}`;
-        const checkerAttendanceUrl = `https://final-hksamms.onrender.com/api/checkerAttendance?studentId=${encodeURIComponent(username)}`;
+        const dutiesUrl = `${API_BASE_URL}/api/duties?id=${encodeURIComponent(username)}`;
+        const attendanceUrl = `${API_BASE_URL}/api/attendance?studentId=${encodeURIComponent(username)}`;
+        const checkerAttendanceUrl = `${API_BASE_URL}/api/checkerAttendance?studentId=${encodeURIComponent(username)}`;
 
         const [dutiesResponse, attendanceResponse, checkerAttendanceResponse] = await Promise.all([
           fetch(dutiesUrl),
@@ -153,17 +174,46 @@ const ACDashboard = () => {
         }, 0);
 
         // ———————————————————————————————————————
-        // ALL-TIME + TODAY ABSENCES COUNTER
+        // ALL-TIME + TODAY ABSENCES COUNTER (with scheduleDate check)
         // ———————————————————————————————————————
         const todayStr = moment().format('YYYY-MM-DD');
 
-        // Include TODAY even if no check-in
-        const historicalDates = [...new Set(checkerAttendance.map(att => moment(att.checkInTime).format('YYYY-MM-DD')))];
-        if (!historicalDates.includes(todayStr)) {
-          historicalDates.push(todayStr);
+        // Find earliest duty createdAt date
+        const dutyDates = duties.map(d => moment(d.createdAt || d.date || new Date()));
+        const earliestDutyDate = dutyDates.length > 0 
+          ? moment.min(dutyDates).format('YYYY-MM-DD')
+          : moment().subtract(90, 'days').format('YYYY-MM-DD'); // Fallback to 90 days
+
+        // Get all dates where there are attendance records
+        const attendanceDates = new Set(
+          checkerAttendance.map(att => {
+            const dateStr = att.scheduleDate 
+              ? moment(att.scheduleDate).format('YYYY-MM-DD')
+              : moment(att.checkInTime).format('YYYY-MM-DD');
+            return dateStr;
+          })
+        );
+        
+        // Generate all dates from earliest duty date to today
+        const historicalDates = new Set();
+        let currentDate = moment(earliestDutyDate);
+        const todayMoment = moment();
+        
+        while (currentDate.isSameOrBefore(todayMoment, 'day')) {
+          const dateStr = currentDate.format('YYYY-MM-DD');
+          const dayName = currentDate.format('dddd');
+          
+          // Check if there's an active duty for this day
+          const hasDuty = duties.some(d => d.day === dayName && d.status === 'Active');
+          if (hasDuty || attendanceDates.has(dateStr)) {
+            historicalDates.add(dateStr);
+          }
+          
+          currentDate.add(1, 'day');
         }
 
         let absentCount = 0;
+        const absentAttendanceRecords = [];
 
         historicalDates.forEach(dateStr => {
           const isToday = dateStr === todayStr;
@@ -179,9 +229,28 @@ const ACDashboard = () => {
               return;
             }
 
-            // Check for completed checkout
+            // NEW: Check for attendance by scheduleDate
+            const scheduleDate = moment(dateStr).startOf('day').toDate();
+            const hasAttendanceBySchedule = checkerAttendance.some((att) => {
+              const attScheduleDate = att.scheduleDate 
+                ? moment(att.scheduleDate).format('YYYY-MM-DD')
+                : moment(att.checkInTime).format('YYYY-MM-DD');
+              
+              // Self-attendance: if photo was taken within scheduleDate, mark as Present
+              if (att.photoId && att.checkInTime) {
+                const photoDate = moment(att.checkInTime).format('YYYY-MM-DD');
+                if (photoDate === dateStr && att.location === duty.room) {
+                  // Photo timestamp is within scheduleDate, this is valid self-attendance
+                  return true;
+                }
+              }
+              
+              return attScheduleDate === dateStr && att.location === duty.room;
+            });
+
+            // OLD: Check for completed checkout
             const hasCompleted = checkerAttendance.some(att => {
-              const checkIn = moment(att.checkInTime);
+              const checkIn = moment(att.checkInTime || att.scheduleDate);
               const checkOut = att.checkOutTime ? moment(att.checkOutTime) : null;
               return (
                 checkIn.format('YYYY-MM-DD') === dateStr &&
@@ -190,11 +259,94 @@ const ACDashboard = () => {
               );
             });
 
-            if (!hasCompleted) {
+            // If no attendance record exists for this scheduleDate, mark as absent
+            if (!hasAttendanceBySchedule) {
+              absentCount++;
+              
+              // Create Absent record in checkerAttendance
+              absentAttendanceRecords.push({
+                studentId: username,
+                studentName: checkerAttendance[0]?.studentName || username,
+                scheduleDate: scheduleDate,
+                location: duty.room,
+                status: 'Absent',
+                checkInTime: scheduleDate,
+              });
+            } else if (!hasCompleted) {
+              // Had attendance but didn't complete
               absentCount++;
             }
           });
         });
+
+        // Save Absent records to checkerAttendance with status="Absent"
+        if (absentAttendanceRecords.length > 0) {
+          console.log('Creating Absent records in checkerAttendance:', absentAttendanceRecords.length);
+          
+          for (const absentRecord of absentAttendanceRecords) {
+            try {
+              // Check if record already exists
+              const scheduleDateStr = moment(absentRecord.scheduleDate).format('YYYY-MM-DD');
+              const existingCheck = await fetch(
+                `${API_BASE_URL}/api/checkerAttendance?studentId=${encodeURIComponent(username)}`
+              );
+              
+              if (existingCheck.ok) {
+                const existing = await existingCheck.json();
+                const hasExistingForSchedule = existing.some(att => {
+                  const attDate = att.scheduleDate 
+                    ? moment(att.scheduleDate).format('YYYY-MM-DD')
+                    : moment(att.checkInTime).format('YYYY-MM-DD');
+                  return attDate === scheduleDateStr && att.location === absentRecord.location;
+                });
+
+                // Only create if it doesn't exist
+                if (!hasExistingForSchedule) {
+                  const absentResponse = await fetch(`${API_BASE_URL}/api/checkerAttendance`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(absentRecord),
+                  });
+
+                  if (absentResponse.ok) {
+                    console.log(`Created Absent record for ${scheduleDateStr}`);
+                  }
+                }
+              }
+            } catch (err) {
+              console.warn('Failed to create Absent record:', err);
+            }
+          }
+        }
+
+        let dailySummaryData = [];
+        let weeklyTrendData = [];
+
+        try {
+          const startRange = moment().subtract(6, 'days').format('YYYY-MM-DD');
+          const [dailyRes, weeklyRes] = await Promise.all([
+            fetch(`${API_BASE_URL}/api/faci-attendance/summary/daily?startDate=${startRange}`),
+            fetch(`${API_BASE_URL}/api/faci-attendance/summary/weekly-trend?days=7`),
+          ]);
+
+          if (dailyRes.ok) {
+            const summary = await dailyRes.json();
+            if (Array.isArray(summary)) {
+              dailySummaryData = summary;
+            }
+          }
+
+          if (weeklyRes.ok) {
+            const trend = await weeklyRes.json();
+            if (Array.isArray(trend)) {
+              weeklyTrendData = trend;
+            }
+          }
+        } catch (summaryError) {
+          console.warn('ACDashboard summary fetch failed:', summaryError.message);
+        }
 
         // ———————————————————————————————————————
         // Set Stats (with Absences)
@@ -240,6 +392,8 @@ const ACDashboard = () => {
           ]);
 
           setSchedule(todaySchedule);
+          setDailySummary(dailySummaryData);
+          setWeeklyTrend(weeklyTrendData);
         }
       } catch (error) {
         if (isMounted) setError(`Failed to load dashboard data: ${error.message}`);
@@ -312,6 +466,53 @@ const ACDashboard = () => {
           )}
         </View>
       </View>
+      <View style={styles.chartSection}>
+        <Text style={styles.chartTitle}>Daily Attendance Distribution</Text>
+        <View style={styles.chartBox}>
+          {dailySummary.length > 0 ? (
+            <StackedBarChart
+              data={{
+                labels: dailySummary.map((item) => moment(item.date).format('MM/DD')),
+                legend: ['Present', 'Absent'],
+                data: dailySummary.map((item) => [item.present || 0, item.absent || 0]),
+                barColors: ['#10B981', '#EF4444'],
+              }}
+              width={Math.max(chartWidth, dailySummary.length * 60)}
+              height={240}
+              chartConfig={chartConfig}
+              style={styles.chartCanvas}
+            />
+          ) : (
+            <Text style={styles.chartEmptyText}>No attendance data for the selected range.</Text>
+          )}
+        </View>
+      </View>
+      <View style={styles.chartSection}>
+        <Text style={styles.chartTitle}>Weekly Attendance Trend</Text>
+        <View style={styles.chartBox}>
+          {weeklyTrend.length > 0 ? (
+            <LineChart
+              data={{
+                labels: weeklyTrend.map((item) => moment(item.date).format('ddd')),
+                datasets: [
+                  {
+                    data: weeklyTrend.map((item) => item.rate ?? 0),
+                    color: (opacity = 1) => `rgba(29, 78, 216, ${opacity})`,
+                    strokeWidth: 2,
+                  },
+                ],
+              }}
+              width={Math.max(chartWidth, weeklyTrend.length * 60)}
+              height={220}
+              chartConfig={chartConfig}
+              bezier
+              style={styles.chartCanvas}
+            />
+          ) : (
+            <Text style={styles.chartEmptyText}>Weekly trend will appear once attendance is recorded.</Text>
+          )}
+        </View>
+      </View>
     </ScrollView>
   );
 };
@@ -342,6 +543,14 @@ const styles = StyleSheet.create({
   scheduleItem: { marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   scheduleDate: { fontWeight: '600', fontSize: 14, color: '#1E293B', marginBottom: 2 },
   scheduleTime: { fontSize: 13, color: '#64748B' },
+  chartSection: { marginTop: 24 },
+  chartTitle: { fontSize: 16, fontWeight: '600', marginBottom: 12, color: '#1E293B' },
+  chartBox: {
+    backgroundColor: '#FFFFFF', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0',
+    elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 2,
+  },
+  chartCanvas: { marginVertical: 8, borderRadius: 12 },
+  chartEmptyText: { fontSize: 13, color: '#64748B', textAlign: 'center' },
 });
 
 export default ACDashboard;

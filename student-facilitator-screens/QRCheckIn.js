@@ -1,7 +1,7 @@
 
 
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,66 +9,97 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const FACI_ATTENDANCE_URL = "http://192.168.1.9:8000/api/faci-attendance";
 
 const QRCheckIn = ({ scannedData }) => {
   const [records, setRecords] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const API_URL = "https://final-hksamms.onrender.com/api/faci-attendance";
-
-  // Fetch attendance records from API on mount
+  const [currentUserId, setCurrentUserId] = useState(null);
   useEffect(() => {
-    const fetchRecords = async () => {
+    let isMounted = true;
+    (async () => {
       try {
-        const response = await fetch(API_URL);
-        console.log('Response status:', response.status); // Keep status log
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        const storedUsername = await AsyncStorage.getItem("username");
+        if (isMounted && storedUsername) {
+          setCurrentUserId(storedUsername.trim());
         }
-        const data = await response.json();
-        setRecords(data);
       } catch (error) {
-        console.error("Error fetching records:", error);
+        console.warn("QRCheckIn (student) failed to load user id:", error);
       }
+    })();
+
+    return () => {
+      isMounted = false;
     };
-    fetchRecords();
   }, []);
+
+  const loadRecords = useCallback(async () => {
+    if (!currentUserId) {
+      setRecords([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${FACI_ATTENDANCE_URL}?studentId=${encodeURIComponent(currentUserId)}`
+      );
+      console.log('Response status:', response.status);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      const ownRecords = Array.isArray(data)
+        ? data.filter((item) =>
+            typeof item.studentId === 'string' &&
+            item.studentId.trim().toLowerCase() === currentUserId.trim().toLowerCase()
+          )
+        : [];
+      setRecords(ownRecords);
+    } catch (error) {
+      console.error("Error fetching records:", error);
+    }
+  }, [currentUserId]);
+
+  useEffect(() => {
+    loadRecords();
+  }, [loadRecords]);
 
   // Update records when new scannedData is received
   useEffect(() => {
-    if (scannedData) {
-      const newRecord = {
-        studentId: scannedData.studentId || `NO-ID-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        studentName: scannedData.studentName || "N/A",
-        checkerId: "FAC001", // Example checker ID (replace with dynamic value if needed)
-        checkerName: "John Facilitator", // Example checker name (replace with dynamic value if needed)
-        checkInTime: new Date(),
-        location: scannedData.location || "Room 101",
-        status: "Present", // Match status from QRScannerScreen
-        dutyType: scannedData.dutyType || "N/A",
-      };
+    if (!scannedData || !currentUserId) return;
 
-      setRecords((prev) => {
-        // Prevent adding duplicate records by checking studentId
-        const exists = prev.some((r) => r.studentId === newRecord.studentId && r.checkInTime === newRecord.checkInTime);
-        return exists ? prev : [newRecord, ...prev];
-      });
-
-      // Refresh records from API to ensure sync
-      const fetchRecords = async () => {
-        try {
-          const response = await fetch(API_URL);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const data = await response.json();
-          setRecords(data);
-        } catch (error) {
-          console.error("Error refreshing records:", error);
-        }
-      };
-      fetchRecords();
+    const scannedId = typeof scannedData.studentId === 'string' ? scannedData.studentId.trim() : '';
+    if (scannedId && scannedId.toLowerCase() !== currentUserId.trim().toLowerCase()) {
+      console.warn('QRCheckIn (student) ignoring scanned data for different user:', scannedId);
+      return;
     }
-  }, [scannedData]);
+
+    const checkInTime = new Date().toISOString();
+    const newRecord = {
+      studentId: currentUserId,
+      studentName: scannedData.studentName || "N/A",
+      checkerId: "FAC001",
+      checkerName: "John Facilitator",
+      checkInTime,
+      location: scannedData.location || "Room 101",
+      status: "Present",
+      dutyType: scannedData.dutyType || "N/A",
+    };
+
+    setRecords((prev) => {
+      const exists = prev.some(
+        (r) =>
+          r.studentId === newRecord.studentId &&
+          r.checkInTime === newRecord.checkInTime
+      );
+      if (exists) return prev;
+      return [newRecord, ...prev];
+    });
+
+    loadRecords();
+  }, [currentUserId, loadRecords, scannedData]);
 
   // Filter records by search input with defensive checks
   const filteredRecords = records.filter((r) => {
