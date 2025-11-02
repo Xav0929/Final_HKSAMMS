@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const FACI_ATTENDANCE_URL = " https://final-hksamms.onrender.com/api/faci-attendance";
+const FACI_ATTENDANCE_URL = "https://final-hksamms.onrender.com/api/faci-attendance";
 
 const QRCheckIn = ({ scannedData }) => {
   const [records, setRecords] = useState([]);

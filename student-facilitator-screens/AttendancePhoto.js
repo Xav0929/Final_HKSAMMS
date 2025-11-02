@@ -28,7 +28,7 @@ const COLUMN_WIDTHS = {
   location: 220,
 };
 
-const API_BASE_URL = " https://final-hksamms.onrender.com";
+const API_BASE_URL = "https://final-hksamms.onrender.com";
 
 const extractBase64Payload = (value = "") => {
   const parts = value.split(",");

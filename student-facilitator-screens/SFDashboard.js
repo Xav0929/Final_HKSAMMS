@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import { LineChart } from 'react-native-chart-kit';
 
-const API_BASE_URL = ' https://final-hksamms.onrender.com';
+const API_BASE_URL = 'https://final-hksamms.onrender.com';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const SFDashboard = () => {

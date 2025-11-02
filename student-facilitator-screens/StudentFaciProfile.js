@@ -31,7 +31,7 @@ const StudentFaciProfile = ({ navigation }) => {
       console.log('🆔 Username retrieved:', username);
 
       // API call to fetch scholar by id (username)
-      const apiUrl = ' https://final-hksamms.onrender.com/api/scholars';
+      const apiUrl = 'https://final-hksamms.onrender.com/api/scholars';
       const response = await axios.get(`${apiUrl}/${username}`, {
         headers: {
           Authorization: `Bearer ${token}`,
