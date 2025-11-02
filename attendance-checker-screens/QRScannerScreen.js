@@ -164,10 +164,14 @@ export default function QRScannerScreen() {
         )}
 
         {scannedData && !isSaving && (
-          <>
-            <QRCheckIn scannedData={scannedData} />
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>✅ Scanned Successfully</Text>
+            <Text style={styles.infoText}>ID: {scannedData.studentId}</Text>
+            <Text style={styles.infoText}>Name: {scannedData.studentName}</Text>
+            <Text style={styles.infoText}>Location: {scannedData.location}</Text>
+            <Text style={styles.infoText}>Status: {scannedData.status}</Text>
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: PRIMARY_COLOR, margin: 15 }]}
+              style={[styles.button, { backgroundColor: PRIMARY_COLOR, marginTop: 15 }]}
               onPress={() => !isScanLocked && setScannedData(null)}
               disabled={isScanLocked}
             >
@@ -175,7 +179,7 @@ export default function QRScannerScreen() {
                 {isScanLocked ? "Locked (Wait 10s)" : "Scan Again"}
               </Text>
             </TouchableOpacity>
-          </>
+          </View>
         )}
       </View>
     );
@@ -205,10 +209,14 @@ export default function QRScannerScreen() {
       )}
 
       {scannedData && !isSaving && (
-        <>
-          <QRCheckIn scannedData={scannedData} />
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>✅ Scanned Successfully</Text>
+          <Text style={styles.infoText}>ID: {scannedData.studentId}</Text>
+          <Text style={styles.infoText}>Name: {scannedData.studentName}</Text>
+          <Text style={styles.infoText}>Location: {scannedData.location}</Text>
+          <Text style={styles.infoText}>Status: {scannedData.status}</Text>
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: PRIMARY_COLOR, marginTop: 15, marginHorizontal: 15 }]}
+            style={[styles.button, { backgroundColor: PRIMARY_COLOR, marginTop: 15 }]}
             onPress={() => !isScanLocked && setScannedData(null)}
             disabled={isScanLocked}
           >
@@ -216,7 +224,7 @@ export default function QRScannerScreen() {
               {isScanLocked ? "Locked (Wait 10s)" : "Scan Again"}
             </Text>
           </TouchableOpacity>
-        </>
+        </View>
       )}
     </View>
   );
@@ -272,8 +280,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   button: {
-    marginTop: 10,
-    backgroundColor: "#333",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
@@ -283,5 +289,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "white",
+  },
+  infoCard: {
+    position: "absolute",
+    bottom: 100,
+    left: 20,
+    right: 20,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    padding: 20,
+    borderRadius: 16,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  infoTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: PRIMARY_COLOR,
+    marginBottom: 12,
+  },
+  infoText: {
+    fontSize: 16,
+    color: "#333",
+    marginBottom: 6,
   },
 });
