@@ -3,7 +3,8 @@ const express = require('express');
 const router = express.Router();
 const Absent = require('../models/Absent');
 const FaciAttendance = require('../models/FaciAttendance');
-const auth = require('../../middleware/auth');
+const auth = require('../middleware/auth');
+
 
 /**
  * GET /api/absent?studentId=SF12345
