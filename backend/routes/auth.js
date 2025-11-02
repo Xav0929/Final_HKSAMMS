@@ -65,17 +65,18 @@ router.post("/forgot-password", async (req, res) => {
 
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     user.otp = otp;
-    user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    user.otpExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    // EMAIL LOGGING
-    console.log("EMAIL SENT: OTP Code");
+    // LOG BEFORE SENDING
+    console.log("SENDING EMAIL: OTP Code");
     console.log(`To: ${email}`);
     console.log(`Username: ${user.username}`);
     console.log(`OTP: ${otp}`);
     console.log(`Expires in: 10 minutes`);
     console.log("---");
 
+    // LET sendEmail() HANDLE LOGGING ON SUCCESS
     await sendEmail({
       to: email,
       subject: "Your OTP Code - HK-SAMMS",
@@ -85,10 +86,12 @@ router.post("/forgot-password", async (req, res) => {
     res.status(200).json({ message: "OTP sent to email" });
   } catch (error) {
     console.error("Forgot password error:", error);
-    res.status(500).json({ message: "Failed to send OTP", error: error.message });
+    res.status(500).json({ 
+      message: "Failed to send OTP", 
+      error: error.message 
+    });
   }
 });
-
 // ---------------- VERIFY OTP ----------------
 router.post("/verify-code", async (req, res) => {
   try {

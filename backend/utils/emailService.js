@@ -2,10 +2,12 @@
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+console.log('EMAIL SERVICE LOADED');
+
 async function sendEmail({ to, subject, text, html }) {
   if (!to || !subject) {
     console.error('sendEmail: Missing `to` or `subject`');
-    throw new Error('Email `to` and `subject` are required');
+    throw new Error('`to` and `subject` are required');
   }
 
   const payload = {
@@ -16,14 +18,14 @@ async function sendEmail({ to, subject, text, html }) {
     html: html || text?.replace(/\n/g, '<br>'),
   };
 
-  const maxRetries = 2;
+  const maxRetries = 3;
   let lastError;
 
-  for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const data = await resend.emails.send(payload);
 
-      // SUCCESS LOG (you'll see this in Render!)
+      // SUCCESS
       console.log('EMAIL SENT');
       console.log(`To: ${to}`);
       console.log(`Subject: ${subject}`);
@@ -35,25 +37,21 @@ async function sendEmail({ to, subject, text, html }) {
       console.log(`Preview: https://resend.com/emails/${data.id}`);
       console.log('---');
 
-      return data;
+      return data; // Return real data
     } catch (err) {
       lastError = err;
       const status = err?.statusCode || 'unknown';
-      const msg = err?.message || 'no message';
+      const message = err?.message || 'no message';
 
-      // FAILURE LOG (clear in Render)
-      console.error('EMAIL FAILED');
-      console.error(`Attempt: ${attempt}/${maxRetries + 1}`);
-      console.error(`To: ${to}`);
-      console.error(`Error (${status}): ${msg}`);
-      if (attempt <= maxRetries) {
+      console.error(`EMAIL ATTEMPT ${attempt} FAILED (status ${status}): ${message}`);
+      if (attempt < maxRetries) {
         console.log(`Retrying in ${1000 * attempt}ms...`);
         await new Promise(r => setTimeout(r, 1000 * attempt));
       }
-      console.log('---');
     }
   }
 
+  // ALL ATTEMPTS FAILED
   console.error('ALL EMAIL ATTEMPTS FAILED');
   throw lastError;
 }
