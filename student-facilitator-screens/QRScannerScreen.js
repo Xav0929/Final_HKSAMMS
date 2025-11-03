@@ -6,37 +6,34 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Platform,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import QRCheckIn from "./QRCheckIn"; // Ensure path is correct
 
-const API_URL = "https://final-hksamms.onrender.com/api/checkerAttendance";
+const API_URL = "https://final-hksamms.onrender.com/api/faci-attendance";
 const PRIMARY_COLOR = "#00A4DF";
-const SCAN_COOLDOWN = 10000;
-
-// Web-only import
-let QrScanner;
-if (Platform.OS === "web") {
-  QrScanner = require("qr-scanner").default;
-}
+const SCAN_COOLDOWN = 10000; // 10 seconds in milliseconds
+const DEBOUNCE_DELAY = 500; // 500ms debounce to handle iOS rapid triggers
 
 export default function QRScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scannedData, setScannedData] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isScanLocked, setIsScanLocked] = useState(false);
-  const videoRef = useRef(null);
-  const scannerRef = useRef(null);
+  const lastProcessTimeRef = useRef(0); // Ref for debounce timestamp
 
   useEffect(() => {
     if (!permission) requestPermission();
   }, [permission]);
 
-  // Shared QR processing
-  const processQRData = async (data) => {
-    if (isScanLocked || isSaving) return;
+  const handleBarcodeScanned = async ({ data }) => {
+    const now = Date.now();
+    if (isScanLocked || isSaving || (now - lastProcessTimeRef.current < DEBOUNCE_DELAY)) {
+      return; // Exit if locked, saving, or too soon after last process
+    }
 
     console.log("Raw QR data:", data);
+    lastProcessTimeRef.current = now; // Update timestamp
     setIsScanLocked(true);
     setIsSaving(true);
 
@@ -45,9 +42,9 @@ export default function QRScannerScreen() {
       setScannedData(parsed);
 
       const checkRecord = {
-        studentId: parsed.studentId || `NO-ID-${Date.now()}-${Math.random() * 1000}`,
+        studentId: parsed.studentId || `NO-ID-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         studentName: parsed.studentName || "N/A",
-        dutyType: parsed.dutyType || "N/A",
+        dutyType: parsed.dutyType || "N/A", // Consistent key
         checkInTime: new Date().toISOString(),
         location: parsed.location || "Room 101",
         status: "Present",
@@ -71,6 +68,7 @@ export default function QRScannerScreen() {
       Alert.alert("⚠️ Invalid QR", "This QR code is not valid or unreadable.");
     } finally {
       setIsSaving(false);
+      // Unlock after 10 seconds
       setTimeout(() => {
         setIsScanLocked(false);
         setScannedData(null);
@@ -78,53 +76,6 @@ export default function QRScannerScreen() {
     }
   };
 
-  // === WEB: QR Scanner Setup ===
-  useEffect(() => {
-    if (Platform.OS !== "web" || !videoRef.current) return;
-
-    let scanner = null;
-    let stream = null;
-
-    const startScanner = async () => {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'environment' } 
-        });
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-
-        scanner = new QrScanner(videoRef.current, (result) => {
-          processQRData(result.data);
-        }, {
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-        });
-        scannerRef.current = scanner;
-        await scanner.start();
-      } catch (err) {
-        console.error("Web scanner error:", err);
-      }
-    };
-
-    if (!isScanLocked && !isSaving) {
-      startScanner();
-    }
-
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop();
-        scannerRef.current.clear();
-      }
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [isScanLocked, isSaving]);
-
-  // === Mobile scan handler ===
-  const handleMobileScan = ({ data }) => processQRData(data);
-
-  // === Permission screen ===
   if (!permission?.granted) {
     return (
       <View style={styles.center}>
@@ -136,59 +87,15 @@ export default function QRScannerScreen() {
     );
   }
 
-  // === WEB RENDER ===
-  if (Platform.OS === "web") {
-    return (
-      <View style={styles.container}>
-        <View style={styles.webCameraContainer}>
-          <video
-            ref={videoRef}
-            style={styles.webCamera}
-            playsInline
-            muted
-          />
-          <View style={styles.webOverlay} />
-        </View>
-
-        <View style={styles.overlay}>
-          <Text style={styles.scanText}>
-            {isScanLocked || isSaving ? "Please wait 10 seconds..." : "Scan Scholar Duty QR"}
-          </Text>
-        </View>
-
-        {isSaving && (
-          <View style={styles.overlayCenter}>
-            <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-            <Text style={{ color: PRIMARY_COLOR, marginTop: 10 }}>Saving...</Text>
-          </View>
-        )}
-
-        {scannedData && !isSaving && (
-          <>
-            <QRCheckIn scannedData={scannedData} />
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: PRIMARY_COLOR, margin: 15 }]}
-              onPress={() => !isScanLocked && setScannedData(null)}
-              disabled={isScanLocked}
-            >
-              <Text style={{ color: "white" }}>
-                {isScanLocked ? "Locked (Wait 10s)" : "Scan Again"}
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-    );
-  }
-
-  // === MOBILE RENDER ===
   return (
     <View style={styles.container}>
       <CameraView
         style={styles.camera}
         facing="back"
-        onBarcodeScanned={isScanLocked || isSaving ? undefined : handleMobileScan}
-        barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+        onBarcodeScanned={isScanLocked || isSaving ? undefined : handleBarcodeScanned}
+        barcodeScannerSettings={{
+          barcodeTypes: ["qr"], // QR only
+        }}
       >
         <View style={styles.overlay}>
           <Text style={styles.scanText}>
@@ -209,7 +116,12 @@ export default function QRScannerScreen() {
           <QRCheckIn scannedData={scannedData} />
           <TouchableOpacity
             style={[styles.button, { backgroundColor: PRIMARY_COLOR, marginTop: 15, marginHorizontal: 15 }]}
-            onPress={() => !isScanLocked && setScannedData(null)}
+            onPress={() => {
+              if (!isScanLocked) {
+                setScannedData(null);
+                lastProcessTimeRef.current = 0; // Reset debounce on manual clear
+              }
+            }}
             disabled={isScanLocked}
           >
             <Text style={{ color: "white" }}>
@@ -225,32 +137,6 @@ export default function QRScannerScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "black" },
   camera: { flex: 1 },
-  
-  // Web styles
-  webCameraContainer: { 
-    flex: 1, 
-    position: "relative",
-    justifyContent: "center",
-    alignItems: "center" 
-  },
-  webCamera: { 
-    width: "100%", 
-    height: "100%", 
-    maxWidth: 500,
-    maxHeight: 500,
-    objectFit: "cover"
-  },
-  webOverlay: {
-    position: "absolute",
-    top: "25%",
-    left: "25%",
-    right: "25%",
-    bottom: "25%",
-    borderWidth: 2,
-    borderColor: "#00A4DF",
-    backgroundColor: "transparent",
-  },
-  
   overlay: {
     position: "absolute",
     bottom: 50,
@@ -266,7 +152,7 @@ const styles = StyleSheet.create({
   scanText: {
     color: "white",
     fontSize: 18,
-    backgroundColor: "rgba(0,0,0,0.7)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 8,
@@ -274,7 +160,7 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 10,
     backgroundColor: "#333",
-    padding: 12,
+    padding: 10,
     borderRadius: 8,
     alignItems: "center",
   },
